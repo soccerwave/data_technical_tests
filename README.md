@@ -149,11 +149,12 @@ notes.md                        top-level file with decisions, assumptions, and 
 
 ## Getting started
 
+1. **Fork this repository** to your own GitHub account using the "Fork" button at the top right of this page
+2. Clone your fork locally:
+
 ```bash
-# clone and create your solution branch
-git clone https://github.com/Primer-Impacto/data_technical_tests.git
+git clone https://github.com/<your-github-username>/data_technical_tests.git
 cd data_technical_tests
-git checkout -b solution/<your-name>
 
 # install dbt with DuckDB adapter (recommended)
 pip install dbt-duckdb
@@ -161,6 +162,8 @@ pip install dbt-duckdb
 # verify
 dbt --version
 ```
+
+3. When you are done, make sure everything is pushed to your fork and share the repository URL with us.
 
 > Questions? Open an issue in this repo.
 

@@ -1,42 +1,38 @@
-# Senior Data Analyst — Technical Test · Primer Impacto
+# Senior Data Analyst — Technical test · Primer Impacto
 
 ## Context
 
-Primer Impacto is a field marketing agency. We manage campaigns for FMCG and pharma clients in which field workers visit points of sale (pharmacies, supermarkets, etc.) following assigned routes. During each visit, workers complete a form with questions — checking product facings, training pharmacy staff, recording visit outcomes, etc.
+Primer Impacto is a field marketing agency. We manage campaigns for FMCG (Fast-Moving Consumer Goods) and pharma clients in which field workers visit points of sale (also referred to as intervention points or points of intervention) — pharmacies, parapharmacies, supermarkets, etc. — following assigned routes. During each visit, workers complete a form with questions: checking product facings, training pharmacy staff, recording visit outcomes, and more.
 
-You have been given **10 raw CSV files** that represent a simplified but realistic version of our operational data model. The data corresponds to activity in **2026** across a portfolio of pharma/parafarmacia clients.
+You have been given **10 raw CSV files** that represent a simplified but realistic version of our operational data model. The data corresponds to activity in **2026** across a portfolio of pharma and parapharmacy clients.
 
 Your mission is to clean the data, model it, and extract business insights from it — exactly as you would in your first weeks in the role.
 
 ---
 
-## The Data Model
+## The data model
 
-The star schema you need to build:
+The dataset covers the following entities and their relationships:
 
-```
-raw_clients
-    └── raw_projects
-            └── raw_campaigns
-                    ├── raw_questions        (form items per campaign)
-                    ├── raw_routes
-                    │       └── raw_route_employee  (worker assigned to route)
-                    │                   └── raw_workers
-                    └── raw_visits           (one row per POS visit)
-                            ├── raw_pos      (point of sale details)
-                            └── raw_responses        (one row per question answered)
-```
+- **Clients** have one or more **projects**
+- **Projects** have one or more **campaigns**, each with a date range and a planned number of visits
+- **Campaigns** have **form questions** associated to them (the questionnaire field workers fill in during visits)
+- **Campaigns** are executed through **routes**, and each route is assigned to one or more **workers**
+- **Visits** are carried out at **points of sale (intervention points)** and are linked to a campaign and a route
+- Each visit generates **responses**, one per question answered
+
+Part of the challenge is to figure out the correct dimensional model from the data itself.
 
 ### Files
 
 | File | Description | Key columns |
 |---|---|---|
-| `raw_clients.csv` | Clients (pharma companies) | `client_id`, `client_name`, `sector` |
+| `raw_clients.csv` | Clients (pharma / FMCG companies) | `client_id`, `client_name`, `sector` |
 | `raw_projects.csv` | Projects per client | `project_id`, `client_id`, `project_name` |
 | `raw_campaigns.csv` | Campaigns per project | `campaign_id`, `project_id`, `campaign_start_date`, `campaign_end_date`, `total_visits_planned` |
 | `raw_questions.csv` | Form questions per campaign | `question_id`, `campaign_id`, `question_name`, `question_type`, `question_category` |
 | `raw_workers.csv` | Field workers | `employee_id`, `employee_first_name`, `employee_address_province`, `employee_contract_type` |
-| `raw_pos.csv` | Points of sale (pharmacies / POS) | `intervention_point_id`, `intervention_point_name`, `intervention_point_province` |
+| `raw_pos.csv` | Points of sale / intervention points | `intervention_point_id`, `intervention_point_name`, `intervention_point_province` |
 | `raw_routes.csv` | Routes per campaign | `route_id`, `campaign_id`, `route_start_date`, `route_end_date` |
 | `raw_route_employee.csv` | Worker ↔ route assignment | `route_employee_id`, `route_id`, `employee_id`, `main_employee` |
 | `raw_visits.csv` | Visits to points of sale | `visit_id`, `campaign_id`, `intervention_point_id`, `route_id`, `visit_date`, `visit_status` |
@@ -63,27 +59,27 @@ raw_clients
 
 ---
 
-## The Challenge
+## The challenge
 
 The test has **three phases** that build on each other. You have **one week**.
 
 ---
 
-### Phase 1 — EDA & Data Quality (`/eda`)
+### Phase 1 — EDA & data quality (`/eda`)
 
 Deliver a Jupyter notebook (or equivalent) with:
 
-1. **Exploratory Data Analysis** — distributions, nulls, cardinalities, outliers, and date ranges across all tables
-2. **Data quality issues** — identify at least 3 problems in the raw data and explain how you would handle them
-3. **Star schema proposal** — draw or describe the dimensional model you will build in Phase 2, justifying your grain and dimension choices
+1. **Exploratory data analysis** — distributions, nulls, cardinalities, outliers, and date ranges across all tables
+2. **Data quality issues** — identify at least 3 problems in the raw data and explain how you would handle them, justifying your approach
+3. **Star schema proposal** — propose the dimensional model you will build in Phase 2; draw it or describe it clearly, and justify your grain and dimension choices
 
 ---
 
-### Phase 2 — dbt Transformations (`/dbt`) — mandatory
+### Phase 2 — dbt transformations (`/dbt`) — mandatory
 
 Using **dbt Core** with **DuckDB** (free, local, zero setup) or **BigQuery Sandbox** (free tier):
 
-1. **Staging layer** (`models/staging/stg_*.sql`) — one model per raw CSV: standardise date formats, cast types, trim strings, handle nulls
+1. **Staging layer** (`models/staging/stg_*.sql`) — one model per raw CSV: standardise date formats, cast types, trim strings, handle nulls. Justify every cleaning decision.
 2. **Marts layer** (`models/marts/`) — at least two business-ready models:
    - `mart_campaign_performance` — campaign-level visit KPIs
    - `mart_visit_responses` — flattened visit + answer table ready for BI consumption
@@ -102,12 +98,7 @@ Build a dashboard that answers the following business question:
 
 > *"The operations team needs to understand how active campaigns are performing and whether field workers are completing their routes. Management wants a portfolio view across clients and projects."*
 
-**We do not prescribe which metrics to show.** A senior analyst should identify the relevant KPIs from the data and the business context. Some angles worth exploring:
-
-- Campaign execution: planned vs actual visits, completion rate by campaign and client
-- Shelf KPIs derived from form responses: product presence, number of facings, out-of-stock rate
-- Worker attribution: to get worker-level KPIs you need to join through `raw_route_employee → raw_routes → raw_visits`
-- Temporal trends across the Jan–May 2026 window
+**We do not prescribe which metrics to show.** A senior analyst should identify the relevant KPIs from the data and the business context. For every metric you include, explain in your notes why you chose it and what business decision it supports.
 
 Deliverable: push a `.pbix`, `.twbx`, Looker Studio link, or Streamlit app to `/dashboard`.
 
@@ -130,12 +121,9 @@ Deliverable: push a `.pbix`, `.twbx`, Looker Studio link, or Streamlit app to `/
 
 /dashboard
   └── <your file, link, or app>
-```
 
-Include a **top-level `notes.md`** in your submission with:
-- Key decisions you made and why
-- Assumptions you had to make
-- What you would do with more time
+notes.md                        top-level file with decisions, assumptions, and what you'd do with more time
+```
 
 ---
 
@@ -148,7 +136,7 @@ Include a **top-level `notes.md`** in your submission with:
 | EDA | Depth of analysis, ability to spot and explain data quality issues |
 | BI / visualisation | Clarity, hierarchy, metric relevance to the business |
 | Business judgement | Do the chosen KPIs make sense for a field marketing company? |
-| Communication | README clarity, decision justification |
+| Communication | Clarity of reasoning and justification at every step |
 
 ---
 

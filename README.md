@@ -1,4 +1,4 @@
-# Senior Data Analyst — Technical test · Primer Impacto
+# Data Analyst — Technical test · Primer Impacto
 
 ## Context
 

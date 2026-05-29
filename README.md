@@ -163,7 +163,7 @@ pip install dbt-duckdb
 dbt --version
 ```
 
-3. When you are done, make sure everything is pushed to your fork and share the repository URL with us.
+3. When you are done, make sure everything is pushed to your fork and reply to the email thread where you received this test with your fork URL.
 
 > Questions? Open an issue in this repo.
 

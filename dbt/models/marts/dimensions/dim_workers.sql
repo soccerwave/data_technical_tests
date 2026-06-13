@@ -20,6 +20,7 @@ deduplicated as (
 
 select
     employee_id,
+    concat(employee_first_name, ' (', employee_id, ')') as worker_label,
     employee_first_name,
     employee_active_status,
     employee_hire_date,

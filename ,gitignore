@@ -1,4 +1,4 @@
-dbt/target/
+logs/
+target/
 dbt/logs/
-
-*.json
+dbt/target/

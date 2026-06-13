@@ -1,170 +1,169 @@
-# Data Analyst — Technical test · Primer Impacto
+# Data Technical Test
 
-## Context
+## Overview
 
-Primer Impacto is a field marketing agency. We manage campaigns for FMCG (Fast-Moving Consumer Goods) and pharma clients in which field workers visit points of sale (also referred to as intervention points or points of intervention) — pharmacies, parapharmacies, supermarkets, etc. — following assigned routes. During each visit, workers complete a form with questions: checking product facings, training pharmacy staff, recording visit outcomes, and more.
+This project analyses campaign, route, visit and response data for Primer Impacto. The goal was to review the raw data, build a cleaned analytical model with dbt and BigQuery, and create a Power BI dashboard for business users.
 
-You have been given **10 raw CSV files** that represent a simplified but realistic version of our operational data model. The data corresponds to activity in **2026** across a portfolio of pharma and parapharmacy clients.
+The final dashboard is designed to help two main audiences:
 
-Your mission is to clean the data, model it, and extract business insights from it — exactly as you would in your first weeks in the role.
+* Operations teams, who need to understand campaign execution, route activity and field-worker assignments.
+* Management teams, who need a higher-level view across clients, projects and campaigns.
 
----
-
-## The data model
-
-The dataset covers the following entities and their relationships:
-
-- **Clients** have one or more **projects**
-- **Projects** have one or more **campaigns**, each with a date range and a planned number of visits
-- **Campaigns** have **form questions** associated to them (the questionnaire field workers fill in during visits)
-- **Campaigns** are executed through **routes**, and each route is assigned to one or more **workers**
-- **Visits** are carried out at **points of sale (intervention points)** and are linked to a campaign and a route
-- Each visit generates **responses**, one per question answered
-
-Part of the challenge is to figure out the correct dimensional model from the data itself.
-
-### Files
-
-| File | Description | Key columns |
-|---|---|---|
-| `raw_clients.csv` | Clients (pharma / FMCG companies) | `client_id`, `client_name`, `sector` |
-| `raw_projects.csv` | Projects per client | `project_id`, `client_id`, `project_name` |
-| `raw_campaigns.csv` | Campaigns per project | `campaign_id`, `project_id`, `campaign_start_date`, `campaign_end_date`, `total_visits_planned` |
-| `raw_questions.csv` | Form questions per campaign | `question_id`, `campaign_id`, `question_name`, `question_type`, `question_category` |
-| `raw_workers.csv` | Field workers | `employee_id`, `employee_first_name`, `employee_address_province`, `employee_contract_type` |
-| `raw_pos.csv` | Points of sale / intervention points | `intervention_point_id`, `intervention_point_name`, `intervention_point_province` |
-| `raw_routes.csv` | Routes per campaign | `route_id`, `campaign_id`, `route_start_date`, `route_end_date` |
-| `raw_route_employee.csv` | Worker ↔ route assignment | `route_employee_id`, `route_id`, `employee_id`, `main_employee` |
-| `raw_visits.csv` | Visits to points of sale | `visit_id`, `campaign_id`, `intervention_point_id`, `route_id`, `visit_date`, `visit_status` |
-| `raw_responses.csv` | Form answers per visit | `answer_id`, `visit_id`, `question_id`, `question_type`, `answer` |
-
-### Visit status values
-
-| Value | Meaning |
-|---|---|
-| `OK` | Visit completed successfully |
-| `INCID` | Visit completed with an incidence |
-| `INFO` | Informational visit (no full report) |
-| `NOVIS` | Visit not carried out |
-
-### Question types
-
-| Code | Type |
-|---|---|
-| `S` | Single selector (pick one option) |
-| `M` | Multi selector (pick several options) |
-| `N` | Numeric |
-| `T` | Free text |
-| `D` | Date |
+The project includes exploratory analysis, dbt models, dbt tests, documentation notes and a Power BI dashboard.
 
 ---
 
-## The challenge
+## Repository structure
 
-The test has **three phases** that build on each other. You have **one week**.
-
----
-
-### Phase 1 — EDA & data quality (`/eda`)
-
-Deliver a Jupyter notebook (or equivalent) with:
-
-1. **Exploratory data analysis** — distributions, nulls, cardinalities, outliers, and date ranges across all tables
-2. **Data quality issues** — identify at least 3 problems in the raw data and explain how you would handle them, justifying your approach
-3. **Star schema proposal** — propose the dimensional model you will build in Phase 2; draw it or describe it clearly, and justify your grain and dimension choices
-
----
-
-### Phase 2 — dbt transformations (`/dbt`) — mandatory
-
-Using **dbt Core** with **DuckDB** (free, local, zero setup) or **BigQuery Sandbox** (free tier):
-
-1. **Staging layer** (`models/staging/stg_*.sql`) — one model per raw CSV: standardise date formats, cast types, trim strings, handle nulls. Justify every cleaning decision.
-2. **Marts layer** (`models/marts/`) — at least two business-ready models:
-   - `mart_campaign_performance` — campaign-level visit KPIs
-   - `mart_visit_responses` — flattened visit + answer table ready for BI consumption
-3. **dbt tests** (`tests/`) — at minimum `not_null`, `unique`, and `relationships` tests on primary and foreign keys
-4. **`dbt/README.md`** — explain your layer decisions, how to run the project locally, and what you would add with more time
-
-> **DuckDB quickstart:** `pip install dbt-duckdb`. Place the raw CSVs in `/data/raw` (already there) and load them as dbt seeds or external sources. No database credentials needed.
-
----
-
-### Phase 3 — Dashboard (`/dashboard`)
-
-Using **Power BI**, **Tableau**, **Looker Studio**, or **Python** (Streamlit / Plotly / Seaborn):
-
-Build a dashboard that answers the following business question:
-
-> *"The operations team needs to understand how active campaigns are performing and whether field workers are completing their routes. Management wants a portfolio view across clients and projects."*
-
-**We do not prescribe which metrics to show.** A senior analyst should identify the relevant KPIs from the data and the business context. For every metric you include, explain in your notes why you chose it and what business decision it supports.
-
-Deliverable: push a `.pbix`, `.twbx`, Looker Studio link, or Streamlit app to `/dashboard`.
-
----
-
-## Deliverables summary
-
-```
-/eda
-  └── eda.ipynb                 (or .html export)
-
-/dbt
-  ├── dbt_project.yml
-  ├── profiles.yml              (use env vars — do NOT commit credentials)
-  ├── README.md
-  ├── models/
-  │   ├── staging/              stg_*.sql  (one per raw table)
-  │   └── marts/                mart_*.sql (at least 2)
-  └── tests/                    .yml or .sql test files
-
-/dashboard
-  └── <your file, link, or app>
-
-notes.md                        top-level file with decisions, assumptions, and what you'd do with more time
+```text
+data_technical_tests/
+│
+├── dashboard/
+│   ├── primer-impacto-test.pbix
+│   ├── executive_dashboard_screenshot.png
+│   ├── campaign_performance_screenshot.png
+│   └── worker_dashboard_screenshot.png
+│
+├── dbt/
+│   ├── models/
+│   │   ├── staging/
+│   │   └── marts/
+│   │       ├── dimensions/
+│   │       ├── facts/
+│   │       ├── reporting/
+│   │       └── schema.yml
+│   ├── dbt_project.yml
+│   └── README.md
+│
+├── eda/
+│   └── eda.ipynb
+│
+├── notes.md
+└── README.md
 ```
 
 ---
 
-## Evaluation criteria
+## Data sources
 
-| Area | What we assess |
-|---|---|
-| SQL & modelling | Star schema quality, correct grain, clean joins |
-| dbt | Layer structure, test coverage, documentation |
-| EDA | Depth of analysis, ability to spot and explain data quality issues |
-| BI / visualisation | Clarity, hierarchy, metric relevance to the business |
-| Business judgement | Do the chosen KPIs make sense for a field marketing company? |
-| Communication | Clarity of reasoning and justification at every step |
+The raw data contains ten CSV files:
+
+* `raw_campaigns`
+* `raw_clients`
+* `raw_pos`
+* `raw_projects`
+* `raw_questions`
+* `raw_responses`
+* `raw_route_employee`
+* `raw_routes`
+* `raw_visits`
+* `raw_workers`
+
+The files were loaded into BigQuery as raw tables. dbt was then used to create staging models, dimensions, facts and reporting marts.
 
 ---
 
-## Important notes
+## dbt model structure
 
-- **Justify everything.** For every decision you make — a cleaning choice, a model design, a metric you pick or discard — write down your reasoning. We are as interested in *how you think* as in the final output. An answer without justification will not be evaluated.
-- **AI assistance is not recommended.** We want to assess your own analytical thinking and SQL/dbt skills. Using AI-generated code or analysis makes it impossible for us to do that, and it will show in the follow-up conversation.
+The dbt project has three main layers.
+
+### Staging layer
+
+The staging models clean and standardise the raw data. This includes casting IDs and dates, parsing mixed date formats, standardising missing visit statuses and preparing the raw tables for modelling.
+
+### Mart layer
+
+The mart layer contains the dimensional model used for analysis:
+
+* `dim_campaigns`
+* `dim_clients`
+* `dim_projects`
+* `dim_pos`
+* `dim_routes`
+* `dim_questions`
+* `dim_workers`
+* `fct_visits`
+* `fct_responses`
+* `bridge_route_employee`
+
+The model follows a star-schema approach. Visits and responses are kept as fact tables, while clients, projects, campaigns, routes, workers, points of sale and questions are kept as dimensions.
+
+The `bridge_route_employee` table is kept separately because routes can be linked to more than one worker.
+
+### Reporting marts
+
+Two additional business-ready marts are included:
+
+* `mart_campaign_performance`
+* `mart_visit_responses`
+
+`mart_campaign_performance` gives campaign-level metrics such as planned visits, recorded visits, recorded/planned rate and visit status counts.
+
+`mart_visit_responses` provides a flattened table combining visits, responses, questions, campaigns, routes and points of sale. This is useful for response-level analysis.
 
 ---
 
-## Getting started
+## Running the dbt project
 
-1. **Fork this repository** to your own GitHub account using the "Fork" button at the top right of this page
-2. Clone your fork locally:
 
-```bash
-git clone https://github.com/<your-github-username>/data_technical_tests.git
-cd data_technical_tests
+The project was developed using BigQuery as the data warehouse.
 
-# install dbt with DuckDB adapter (recommended)
-pip install dbt-duckdb
+One known data quality issue is that some visits contain route IDs that do not exist in the route dimension. These records are kept and flagged in the model because they represent a real source-data issue. The details are explained in `notes.md`.
 
-# verify
-dbt --version
+---
+
+## Dashboard
+
+The Power BI dashboard is available in the `dashboard/` folder:
+
+```text
+dashboard/primer-impacto-test.pbix
 ```
 
-3. When you are done, make sure everything is pushed to your fork and reply to the email thread where you received this test with your fork URL.
+Screenshots are also included:
 
-> Questions? Open an issue in this repo.
+```text
+dashboard/executive_dashboard_screenshot.png
+dashboard/campaign_performance_screenshot.png
+dashboard/worker_dashboard_screenshot.png
+```
 
-Good luck!
+The dashboard has three pages.
+
+### 1. Portfolio Overview
+
+This page gives a management level view of clients, projects and campaigns. It shows planned visits, recorded visits, recorded/planned rate, total campaigns and active campaigns.
+
+### 2. Campaign & Route Performance
+
+This page focuses on campaign execution and route status. It compares planned and recorded visits and highlights missing route references.
+
+### 3. Worker & Route Activity
+
+This page focuses on field worker and route activity. Worker level metrics are based on main-worker assignments to avoid double-counting visits when a route has more than one worker.
+
+---
+
+## Main dashboard metrics
+
+Some of the main final metrics are:
+
+* Planned Visits: 16,768
+* Recorded Visits: 1,747
+* Recorded / Planned Rate: 10.42%
+* Total Campaigns: 72
+* Active Campaigns: 16
+* Missing Route References: 70
+* Main Workers: 34
+* Assigned Routes: 241
+* Worker-linked Visits: 1,522
+* Visits without Main Worker: 225
+* NOVIS Visits linked to main workers: 119
+
+These metrics are explained in more detail in `notes.md`.
+
+---
+
+## Notes
+
+The file `notes.md` contains the main assumptions, data quality findings, KPI definitions and dashboard design decisions.

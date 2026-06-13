@@ -1,343 +1,69 @@
-# Primer Impacto Data Technical Test Notes
+# Notes
 
-## Overview
+## General approach
 
-This project builds a simple analytics layer on top of the raw Primer Impacto CSV files using BigQuery and dbt.
+I first checked the raw files to understand the main tables, keys and data quality issues. After that I created staging models in dbt to clean types, parse dates and standardise some fields. Then I built a dimensional model with facts, dimensions and a bridge table for route-worker assignments.
 
-The solution follows this structure:
+I used a star schema because the data has clear entities such as clients, projects, campaigns, routes, workers, points of sale, visits and responses. This also made the Power BI model easier to work with, especially for slicers and relationships.
 
-```text
-raw CSV files
-→ BigQuery raw tables
-→ dbt staging models
-→ dbt marts: dimensions, bridge, and fact tables
-```
+The main fact tables are:
 
-The goal was to keep the solution clear, traceable, and appropriate for a junior data engineering / analytics engineering technical test. I avoided unnecessary complexity such as incremental models, snapshots, custom macros, or external dbt packages.
+* `fct_visits`: one row per unique visit.
+* `fct_responses`: one row per answer/response.
 
-## Raw data
+The main dimensions are campaigns, clients, projects, points of sale, routes, questions and workers. I also kept `bridge_route_employee` as a separate table because routes can have more than one worker.
 
-The raw data contains 10 CSV files:
+I also added two reporting marts: `mart_campaign_performance` and `mart_visit_responses`.
 
-```text
-raw_campaigns
-raw_clients
-raw_pos
-raw_projects
-raw_questions
-raw_responses
-raw_route_employee
-raw_routes
-raw_visits
-raw_workers
-```
+## Data quality findings
 
-The raw tables were loaded into BigQuery under the `primer_raw` dataset. dbt reads these tables as sources and writes staging and mart models into analytics schemas.
+The raw visits table has 1,762 rows but 1,747 unique `visit_id` values. I used the unique visit ID as the grain of `fct_visits`, so recorded visits are counted as distinct visits.
 
-## Initial EDA findings
+There were missing values in `visit_status`. I did not remove those visits. I labelled them as `UNKNOWN` so they can still be counted and reviewed in the dashboard.
 
-The main findings from the exploratory data analysis were:
+Campaign dates had more than one format, so I parsed both ISO dates and `DD/MM/YYYY` dates. I also found two campaigns where the end date is earlier than the start date. I kept these rows and flagged them with `has_invalid_date_range`.
 
-* `raw_visits` contains 1,762 rows and 1,747 distinct `visit_id` values.
-* `raw_responses` contains 10,192 rows.
-* Duplicate natural keys were found in:
+There are 70 visits with a `route_id` that does not exist in the routes dimension. I kept these visits and flagged them with `has_missing_route_reference`. This is a source data issue, not something I wanted to hide by removing records.
 
-  * `raw_clients`: 1 duplicate `client_id`
-  * `raw_workers`: duplicate `employee_id` values 6 and 11
-  * `raw_visits`: 15 duplicate `visit_id` values
-* 70 visits reference `route_id` values that do not exist in `raw_routes`.
-* `visit_status` has 71 null values.
-* `question_type` contains null values in both questions and responses.
-* Campaign dates use mixed formats: ISO dates and DD/MM/YYYY dates.
-* Two campaigns have `campaign_end_date` earlier than `campaign_start_date`:
+Some responses also have missing `question_id` values. I kept those response rows because they are still real responses, but they cannot always be linked to a known question.
 
-  * `campaign_id = 28`
-  * `campaign_id = 30`
+## Worker and route logic
 
-## Data modeling approach
+The worker part needed extra care because a route can have more than one worker assigned. If I joined all workers directly to visits, the same visit could be counted more than once. To avoid this, worker-level metrics are based on `main_employee = true`.
 
-The project uses a simple raw → staging → marts structure.
+There are 45 workers in the worker master table, but only 34 workers appear as main workers in the route assignment data. For that reason, the worker dashboard shows `Main Workers = 34`. The 45 workers represent all workers in the source table, while 34 represents workers actually used as main workers for routes in this dataset.
 
-The staging layer keeps the original row grain and is used only for light cleaning:
+Worker first names are not unique, so I created a `worker_label` using first name and employee ID together. This avoids grouping different people under the same first name in the dashboard.
 
-* type casting with `safe_cast`
-* date parsing
-* basic categorical null handling
-* data quality flags
-* keeping source-level columns in a cleaner format
+There are 1,747 recorded visits in total. Of these, 1,522 can be linked to a main worker through the route assignment table. The remaining 225 visits cannot be linked to a main worker. This is why the worker dashboard separates total recorded visits from worker-linked visits.
 
-I intentionally did not deduplicate rows in staging. Staging models should stay close to the raw data and preserve row counts for traceability. Deduplication is applied in marts, where the final analytical grain is defined.
+## KPI definitions
 
-## Staging layer
+* Planned Visits: sum of planned visits from campaigns.
+* Recorded Visits: distinct count of visit IDs after deduplication.
+* Recorded / Planned Rate: recorded visits divided by planned visits.
+* Total Campaigns: distinct count of campaigns.
+* Active Campaigns: campaigns where `campaign_state = 'Activa'`.
+* Missing Route References: visits with route IDs missing from the route dimension.
+* Main Workers: workers assigned as main workers on routes.
+* Assigned Routes: routes with a main-worker assignment.
+* Worker-linked Visits: visits linked to a main worker through route assignment.
+* Visits without Main Worker: recorded visits that cannot be linked to a main worker.
 
-The staging layer contains one model per raw source table:
+## Dashboard decisions
 
-```text
-stg_campaigns
-stg_clients
-stg_pos
-stg_projects
-stg_questions
-stg_responses
-stg_route_employee
-stg_routes
-stg_visits
-stg_workers
-```
+The dashboard has three pages.
 
-The staging models standardize data types and clean obvious source issues.
+`Portfolio Overview` gives a high-level view across clients, projects and campaigns.
 
-Examples:
+`Campaign & Route Performance` focuses on planned vs recorded visits, campaign performance and route status.
 
-* `visit_status` null values are converted to `UNKNOWN`.
-* dates are parsed using safe casting.
-* campaign date ranges are flagged when invalid.
-* IDs are cast to strings for consistent joins.
-* boolean and numeric fields are safely cast.
+`Worker & Route Activity` focuses on main-worker assignments and visit outcomes by worker.
+## Main assumptions
 
-The staging layer preserves the row counts from the raw source tables. For example:
-
-```text
-stg_campaigns: 72 rows
-stg_visits: 1,762 rows
-stg_responses: 10,192 rows
-```
-
-## Mart layer
-
-The mart layer contains dimension, bridge, and fact models.
-
-Dimensions:
-
-```text
-dim_campaigns
-dim_clients
-dim_pos
-dim_projects
-dim_questions
-dim_routes
-dim_workers
-```
-
-Bridge table:
-
-```text
-bridge_route_employee
-```
-
-Fact tables:
-
-```text
-fct_visits
-fct_responses
-```
-
-## Visit grain and deduplication
-
-The raw visits table contains 1,762 rows but only 1,747 unique `visit_id` values.
-
-I kept all rows in `stg_visits` to preserve the raw source grain. Then I created `fct_visits` with one row per `visit_id`.
-
-Duplicate visits were resolved using:
-
-```sql
-row_number() over (
-    partition by visit_id
-    order by updated_at_sys desc, created_at desc
-)
-```
-
-The final `fct_visits` table contains:
-
-```text
-total_rows = 1,747
-unique_visit_ids = 1,747
-```
-
-This enforces the intended analytical grain: one row per visit.
-
-## Response grain
-
-The responses fact table uses `answer_id` as its grain.
-
-The final `fct_responses` table contains:
-
-```text
-total_rows = 10,192
-unique_answer_ids = 10,192
-```
-
-This confirms that the response fact table keeps one row per answer.
-
-I also added a simple derived field:
-
-```text
-is_expected_answer
-```
-
-This compares `answer` and `expected_answer` where both values are available.
-
-## Campaign date quality
-
-Campaign dates appeared in mixed formats, including ISO dates and DD/MM/YYYY values.
-
-In `stg_campaigns`, I parsed both formats using:
-
-```sql
-coalesce(
-    safe_cast(campaign_start_date as date),
-    safe.parse_date('%d/%m/%Y', campaign_start_date)
-)
-```
-
-The same logic was applied to `campaign_end_date`.
-
-Two campaigns have an end date earlier than the start date:
-
-```text
-campaign_id = 28
-campaign_id = 30
-```
-
-I did not correct, null, or drop these rows. Instead, I added a flag:
-
-```text
-has_invalid_date_range
-```
-
-This keeps the issue visible while preserving the source data.
-
-## Route data quality
-
-There are 70 visits whose `route_id` does not exist in `raw_routes`.
-
-I kept `route_id` in `fct_visits` and added a relationship test against `dim_routes`.
-
-This test is configured with:
-
-```yaml
-severity: warn
-```
-
-The reason is that the issue is a known source data quality problem found during EDA. Keeping it as a warning makes the issue visible without failing the full dbt test run.
-
-Final dbt test result:
-
-```text
-PASS = 31
-WARN = 1
-ERROR = 0
-```
-
-The single warning is the known route relationship issue.
-
-## Worker-route relationship
-
-Workers are not joined directly into `fct_visits`.
-
-The visits table contains `route_id`, but it does not contain `employee_id`. Workers are linked to routes through `raw_route_employee`.
-
-The relationship is:
-
-```text
-fct_visits.route_id
-→ bridge_route_employee.route_id
-→ dim_workers.employee_id
-```
-
-Joining workers directly into `fct_visits` could duplicate visit rows if one route has multiple workers. To avoid changing the grain of the visit fact table, I kept this relationship in a separate bridge table:
-
-```text
-bridge_route_employee
-```
-
-This preserves the intended grain of `fct_visits`.
-
-## dbt tests
-
-The project includes basic dbt tests for:
-
-* primary keys using `not_null` and `unique`
-* relationships between facts and dimensions
-* relationship checks for bridge tables
-
-Main examples:
-
-* `fct_visits.visit_id` is unique and not null.
-* `fct_responses.answer_id` is unique and not null.
-* `fct_responses.visit_id` references `fct_visits.visit_id`.
-* `fct_responses.question_id` references `dim_questions.question_id`.
-* `fct_visits.campaign_id` references `dim_campaigns.campaign_id`.
-* `fct_visits.intervention_point_id` references `dim_pos.intervention_point_id`.
-* `fct_visits.route_id` references `dim_routes.route_id` with warning severity because of known orphan route IDs.
-
-The final dbt test run completed with:
-
-```text
-PASS = 31
-WARN = 1
-ERROR = 0
-```
-
-## Final model structure
-
-The final dbt structure is:
-
-```text
-models/
-  staging/
-    sources.yml
-    stg_campaigns.sql
-    stg_clients.sql
-    stg_pos.sql
-    stg_projects.sql
-    stg_questions.sql
-    stg_responses.sql
-    stg_route_employee.sql
-    stg_routes.sql
-    stg_visits.sql
-    stg_workers.sql
-
-  marts/
-    schema.yml
-
-    dimensions/
-      dim_campaigns.sql
-      dim_clients.sql
-      dim_pos.sql
-      dim_projects.sql
-      dim_questions.sql
-      dim_routes.sql
-      dim_workers.sql
-
-    bridges/
-      bridge_route_employee.sql
-
-    facts/
-      fct_visits.sql
-      fct_responses.sql
-```
-
-## Final validation
-
-The full dbt project runs successfully:
-
-```bash
-dbt run
-```
-
-The tests also complete without errors:
-
-```bash
-dbt test
-```
-
-Final result:
-
-```text
-31 tests passed
-1 warning
-0 errors
-```
-
-The warning corresponds to the 70 visits with route IDs missing from the route dimension, which was identified during EDA and intentionally kept visible as a data quality warning.
+* `visit_id` is the unique key for visits.
+* `answer_id` is the unique key for responses.
+* `main_employee = true` identifies the main worker for route-level worker analysis.
+* Worker-level visit counts should use main workers only to avoid double-counting.
+* Data quality issues should be flagged and shown, not removed without business confirmation.
+* `campaign_state = 'Activa'` is used for active campaign counting in the dashboard.

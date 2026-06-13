@@ -1,0 +1,169 @@
+version: 2
+
+models:
+  - name: fct_visits
+    description: "Fact table with one row per unique visit_id."
+    columns:
+      - name: visit_id
+        description: "Unique visit identifier."
+        tests:
+          - not_null
+          - unique
+
+      - name: campaign_id
+        description: "Campaign linked to the visit."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_campaigns')
+                field: campaign_id
+
+      - name: intervention_point_id
+        description: "Intervention point / POS linked to the visit."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_pos')
+                field: intervention_point_id
+
+      - name: route_id
+        description: "Route linked to the visit. Some route_ids are known to be missing from raw_routes."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_routes')
+                field: route_id
+              config:
+                severity: warn
+
+  - name: fct_responses
+    description: "Fact table with one row per response/answer."
+    columns:
+      - name: answer_id
+        description: "Unique response identifier."
+        tests:
+          - not_null
+          - unique
+
+      - name: visit_id
+        description: "Visit linked to the response."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_visits')
+                field: visit_id
+
+      - name: question_id
+        description: "Question linked to the response. Some values may be null in the raw data."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_questions')
+                field: question_id
+
+  - name: dim_campaigns
+    description: "Campaign dimension. Includes parsed campaign dates and a flag for invalid date ranges."
+    columns:
+      - name: campaign_id
+        tests:
+          - not_null
+          - unique
+
+      - name: project_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_projects')
+                field: project_id
+
+  - name: dim_clients
+    description: "Client dimension, deduplicated by client_id."
+    columns:
+      - name: client_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_projects
+    description: "Project dimension, deduplicated by project_id."
+    columns:
+      - name: project_id
+        tests:
+          - not_null
+          - unique
+
+      - name: client_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+
+  - name: dim_pos
+    description: "Intervention point / POS dimension."
+    columns:
+      - name: intervention_point_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_routes
+    description: "Route dimension, deduplicated by route_id."
+    columns:
+      - name: route_id
+        tests:
+          - not_null
+          - unique
+
+      - name: campaign_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_campaigns')
+                field: campaign_id
+
+  - name: dim_questions
+    description: "Question dimension, deduplicated by question_id."
+    columns:
+      - name: question_id
+        tests:
+          - not_null
+          - unique
+
+      - name: campaign_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_campaigns')
+                field: campaign_id
+
+  - name: dim_workers
+    description: "Worker dimension, deduplicated by employee_id."
+    columns:
+      - name: employee_id
+        tests:
+          - not_null
+          - unique
+
+  - name: bridge_route_employee
+    description: "Bridge table linking routes and workers. Kept separate to avoid changing the grain of fct_visits."
+    columns:
+      - name: route_employee_id
+        tests:
+          - not_null
+          - unique
+
+      - name: route_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_routes')
+                field: route_id
+
+      - name: employee_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_workers')
+                field: employee_id

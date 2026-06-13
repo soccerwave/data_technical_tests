@@ -5,13 +5,13 @@ sources:
     database: primer-impacto-test
     schema: primer_raw
     tables:
-      - name: raw_campaigns
       - name: raw_clients
-      - name: raw_pos
       - name: raw_projects
+      - name: raw_campaigns
       - name: raw_questions
-      - name: raw_responses
-      - name: raw_route_employee
-      - name: raw_routes
-      - name: raw_visits
       - name: raw_workers
+      - name: raw_pos
+      - name: raw_routes
+      - name: raw_route_employee
+      - name: raw_visits
+      - name: raw_responses

@@ -1,10 +1,3 @@
-with responses as (
-
-    select *
-    from {{ ref('stg_responses') }}
-
-)
-
 select
     answer_id,
     visit_id,
@@ -27,4 +20,4 @@ select
     created_at,
     updated_at_sys
 
-from responses
+from {{ ref('stg_responses') }}

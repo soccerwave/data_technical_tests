@@ -10,14 +10,7 @@
     
     OPTIONS()
     as (
-      with responses as (
-
-    select *
-    from `primer-impacto-test`.`primer_analytics_staging`.`stg_responses`
-
-)
-
-select
+      select
     answer_id,
     visit_id,
     question_id,
@@ -39,6 +32,6 @@ select
     created_at,
     updated_at_sys
 
-from responses
+from `primer-impacto-test`.`primer_analytics_staging`.`stg_responses`
     );
   

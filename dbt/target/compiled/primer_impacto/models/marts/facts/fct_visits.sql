@@ -1,7 +1,7 @@
 with visits as (
 
     select *
-    from {{ ref('stg_visits') }}
+    from `primer-impacto-test`.`primer_analytics_staging`.`stg_visits`
 
 ),
 
@@ -9,7 +9,7 @@ routes as (
 
     select
         route_id
-    from {{ ref('dim_routes') }}
+    from `primer-impacto-test`.`primer_analytics_marts`.`dim_routes`
 
 ),
 

@@ -36,6 +36,9 @@ models:
               config:
                 severity: warn
 
+      - name: has_missing_route_reference
+        description: "Flags visits where route_id is present but does not exist in dim_routes."
+
   - name: fct_responses
     description: "Fact table with one row per response/answer."
     columns:
@@ -62,25 +65,49 @@ models:
                 to: ref('dim_questions')
                 field: question_id
 
+      - name: is_expected_answer
+        description: "Flags whether the answer matches the expected answer. Null is kept when answer or expected_answer is missing."
+
   - name: dim_campaigns
-    description: "Campaign dimension. Includes parsed campaign dates and a flag for invalid date ranges."
+    description: "Campaign dimension. Includes parsed campaign dates, business status fields, planned visit metrics, and a flag for invalid date ranges."
     columns:
       - name: campaign_id
+        description: "Unique campaign identifier."
         tests:
           - not_null
           - unique
 
       - name: project_id
+        description: "Project linked to the campaign."
         tests:
           - relationships:
               arguments:
                 to: ref('dim_projects')
                 field: project_id
 
+      - name: campaign_state
+        description: "Current business state of the campaign."
+
+      - name: is_active
+        description: "Indicates whether the campaign is active."
+
+      - name: total_visits_planned
+        description: "Number of visits planned for the campaign."
+
+      - name: total_pos_planned
+        description: "Number of intervention points planned for the campaign."
+
+      - name: visit_duration_minutes
+        description: "Planned visit duration in minutes."
+
+      - name: has_invalid_date_range
+        description: "Flags campaigns where campaign_end_date is earlier than campaign_start_date."
+
   - name: dim_clients
     description: "Client dimension, deduplicated by client_id."
     columns:
       - name: client_id
+        description: "Unique client identifier."
         tests:
           - not_null
           - unique
@@ -89,11 +116,13 @@ models:
     description: "Project dimension, deduplicated by project_id."
     columns:
       - name: project_id
+        description: "Unique project identifier."
         tests:
           - not_null
           - unique
 
       - name: client_id
+        description: "Client linked to the project."
         tests:
           - relationships:
               arguments:
@@ -104,6 +133,7 @@ models:
     description: "Intervention point / POS dimension."
     columns:
       - name: intervention_point_id
+        description: "Unique intervention point identifier."
         tests:
           - not_null
           - unique
@@ -112,11 +142,13 @@ models:
     description: "Route dimension, deduplicated by route_id."
     columns:
       - name: route_id
+        description: "Unique route identifier."
         tests:
           - not_null
           - unique
 
       - name: campaign_id
+        description: "Campaign linked to the route."
         tests:
           - relationships:
               arguments:
@@ -127,11 +159,13 @@ models:
     description: "Question dimension, deduplicated by question_id."
     columns:
       - name: question_id
+        description: "Unique question identifier."
         tests:
           - not_null
           - unique
 
       - name: campaign_id
+        description: "Campaign linked to the question."
         tests:
           - relationships:
               arguments:
@@ -142,6 +176,7 @@ models:
     description: "Worker dimension, deduplicated by employee_id."
     columns:
       - name: employee_id
+        description: "Unique employee identifier."
         tests:
           - not_null
           - unique
@@ -150,11 +185,13 @@ models:
     description: "Bridge table linking routes and workers. Kept separate to avoid changing the grain of fct_visits."
     columns:
       - name: route_employee_id
+        description: "Unique route-employee relationship identifier."
         tests:
           - not_null
           - unique
 
       - name: route_id
+        description: "Route linked to the employee assignment."
         tests:
           - relationships:
               arguments:
@@ -162,6 +199,7 @@ models:
                 field: route_id
 
       - name: employee_id
+        description: "Employee linked to the route assignment."
         tests:
           - relationships:
               arguments:

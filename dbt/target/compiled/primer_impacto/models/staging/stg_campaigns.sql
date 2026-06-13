@@ -1,7 +1,7 @@
 with source as (
 
     select *
-    from {{ source('raw', 'raw_campaigns') }}
+    from `primer-impacto-test`.`primer_raw`.`raw_campaigns`
 
 ),
 

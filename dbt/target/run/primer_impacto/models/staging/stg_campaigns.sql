@@ -1,7 +1,11 @@
-with source as (
+
+
+  create or replace view `primer-impacto-test`.`primer_analytics_staging`.`stg_campaigns`
+  OPTIONS()
+  as with source as (
 
     select *
-    from {{ source('raw', 'raw_campaigns') }}
+    from `primer-impacto-test`.`primer_raw`.`raw_campaigns`
 
 ),
 
@@ -45,4 +49,5 @@ select
     *,
     campaign_end_date < campaign_start_date as has_invalid_date_range
 
-from casted
+from casted;
+

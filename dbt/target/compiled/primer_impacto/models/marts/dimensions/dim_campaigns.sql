@@ -1,7 +1,7 @@
 with campaigns as (
 
     select *
-    from {{ ref('stg_campaigns') }}
+    from `primer-impacto-test`.`primer_analytics_staging`.`stg_campaigns`
 
 ),
 

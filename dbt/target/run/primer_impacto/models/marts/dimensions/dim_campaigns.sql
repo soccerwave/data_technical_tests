@@ -1,7 +1,19 @@
-with campaigns as (
+
+  
+    
+
+    create or replace table `primer-impacto-test`.`primer_analytics_marts`.`dim_campaigns`
+      
+    
+    
+
+    
+    OPTIONS()
+    as (
+      with campaigns as (
 
     select *
-    from {{ ref('stg_campaigns') }}
+    from `primer-impacto-test`.`primer_analytics_staging`.`stg_campaigns`
 
 ),
 
@@ -45,3 +57,5 @@ select
 
 from deduplicated
 where row_num = 1
+    );
+  

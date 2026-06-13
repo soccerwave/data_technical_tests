@@ -1,0 +1,25 @@
+
+    
+    
+
+with child as (
+    select client_id as from_field
+    from `primer-impacto-test`.`primer_analytics_marts`.`dim_projects`
+    where client_id is not null
+),
+
+parent as (
+    select client_id as to_field
+    from `primer-impacto-test`.`primer_analytics_marts`.`dim_clients`
+)
+
+select
+    from_field
+
+from child
+left join parent
+    on child.from_field = parent.to_field
+
+where parent.to_field is null
+
+

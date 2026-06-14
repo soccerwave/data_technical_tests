@@ -37,15 +37,18 @@ models/
 
 ## Staging layer
 
+Staging layer
+
 The staging layer has one model per raw table. I used this layer mainly to:
 
 - cast IDs and dates to consistent types
 - trim and standardise text fields
-- parse campaign dates that appear in more than one format
-- replace missing `visit_status` values with `UNKNOWN`
+- standardise country and province fields used in geographic reporting
+- parse campaign and visit dates that appear in more than one format
+- replace missing visit_status values with UNKNOWN
 - keep source records visible instead of dropping them too early
 
-I tried to keep the staging models close to the raw data, but with cleaner column types and more consistent values.
+I tried to keep the staging models close to the raw data, but with cleaner column types and more consistent values. For example, I standardised country and province labels so that the same location would not appear as separate categories in the dashboard because of casing, accents, or spelling variations.
 
 ## Mart layer
 

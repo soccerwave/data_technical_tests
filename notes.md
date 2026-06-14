@@ -2,7 +2,7 @@
 
 ## General approach
 
-I first checked the raw files to understand the main tables, keys and data quality issues. After that I created staging models in dbt to clean types, parse dates and standardise some fields. Then I built a dimensional model with facts, dimensions and a bridge table for route-worker assignments.
+I first checked the raw files to understand the main tables, keys and data quality issues. After that I created staging models in dbt to clean types, parse dates and standardise some fields. Then I built a dimensional model with facts, dimensions and a bridge table for route/worker assignments.
 
 I used a star schema because the data has clear entities such as clients, projects, campaigns, routes, workers, points of sale, visits and responses. This also made the Power BI model easier to work with, especially for slicers and relationships.
 

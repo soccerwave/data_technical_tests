@@ -1,9 +1,14 @@
 select
     cast(client_id as string) as client_id,
-    client_name,
 
+    client_name,
     cast(company_id as string) as company_id,
-    country,
+
+    case
+        when lower(trim(country)) in ('spain', 'españa') then 'Spain'
+        else initcap(trim(country))
+    end as country,
+
     sector,
 
     safe_cast(created_at as date) as created_at,

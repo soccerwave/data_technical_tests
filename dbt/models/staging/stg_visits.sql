@@ -11,9 +11,10 @@ select
     route_code,
 
     coalesce(
-    safe_cast(visit_date as date),
-    safe.parse_date('%d/%m/%Y', visit_date)
-) as visit_date,
+        safe_cast(visit_date as date),
+        safe.parse_date('%d/%m/%Y', visit_date)
+    ) as visit_date,
+
     safe_cast(visit_time as time) as visit_time,
 
     coalesce(visit_status, 'UNKNOWN') as visit_status,

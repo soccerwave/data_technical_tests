@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: primer-impacto-test
+    database: "{{ target.project }}"
     schema: primer_raw
     tables:
       - name: raw_clients
